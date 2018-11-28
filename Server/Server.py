@@ -12,11 +12,11 @@ import _thread
         
 path = ("./")
 # fileList = []
-_lsremote = ('ls-remote')
+#_lsremote = ("ls-remote")
 files = [f for f in os.listdir('.') if os.path.isfile(f)]
  
-HOST = '127.0.0.1'   # Symbolic name meaning all available interfaces
-PORT = 8888 # Arbitrary non-privileged port
+HOST = '127.0.0.1'   # Hostname
+PORT = 8888 # port
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print ('Socket created')
@@ -37,18 +37,18 @@ print ('Socket now listening')
 #Function for handling connections. This will be used to create threads
 def clientthread(conn):
     #Sending message to connected client
-    # conn.send('Connected, type !help for command list:\n') #send only takes string
+    #conn.send('Connected, type !help for command list:\n') #send only takes string
      
     #infinite loop so that function do not terminate and thread do not end.
     while True:
          
         #Receiving from client
         data = conn.recv(1024)
-        # we split data at the first white space. first word is opcode, second is file
+        # data will be split with a space.
         _data = data.decode().split(" ", 1)
 
         #----ls-remote----#
-        if(data == _lsremote):
+        if(data == 'ls-remote'):
             # refresh file list
             files = [f for f in os.listdir('.') if os.path.isfile(f)]
             print('User: '+addr[0]+':'+str(addr[1])+' requested ls-remote')
@@ -58,46 +58,7 @@ def clientthread(conn):
                 remoteList += ("\n-> "+f+"\t%d bytes" % fileSize)
             conn.sendall(remoteList.encode())
 
-        #----PUT----#
-        elif(_data[0] == 'put'):
-            # catch file name
-            reqFileName = _data[1]
-            print('User: '+addr[0]+':'+str(addr[1])+' requested a PUT for: %s' % reqFileName)
 
-            # send back the file name as ACK
-            conn.sendall(str(reqFileName))
-
-            #receive file size
-            reqFileSize = conn.recv(1024)
-            print('PUT file size: '+reqFileSize+' bytes')
-
-            # send back the file size as ACK
-            conn.sendall(reqFileSize)
-
-            # receive file
-
-            # send file in slices of 1024 bytes:
-            # open file in read byte mode:
-            f = open((path+reqFileName), "wb") # write bytes flag is passed
-            buffRead = 0
-            bytesRemaining = int(reqFileSize)
-            while bytesRemaining != 0:
-                if(bytesRemaining >= 1024): # slab >= than 1024 buffer
-                    # receive slab from client
-                    slab = conn.recv(1024)
-                    f.write(slab)
-                    sizeofSlabReceived = len(slab)
-                    print("wrote %d bytes" % len(slab))
-
-                    bytesRemaining = bytesRemaining - int(sizeofSlabReceived)
-                else:
-                    #receive slab from server
-                    slab = conn.recv(bytesRemaining) # of 1024
-                    f.write(slab)
-                    sizeofSlabReceived = len(slab)
-                    print("wrote %d bytes" % len(slab))
-                    bytesRemaining = bytesRemaining - int(sizeofSlabReceived)
-            print("File uploaded completely")
 
         #----GET----#
         elif(_data[0] == 'get'):
@@ -114,7 +75,7 @@ def clientthread(conn):
                     conn.sendall(reply.encode())
                     # get file size and send it to user
                     reqFileSize = os.path.getsize(f)
-                    conn.sendall(str(reqFileSize))
+                    conn.sendall(bytes(reqFileSize))
 
                     # receive user file size ACK
                     fSizeACK = conn.recv(1024)
