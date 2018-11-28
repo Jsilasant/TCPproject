@@ -48,7 +48,7 @@ def clientthread(conn):
         _data = data.decode().split(" ", 1)
 
         #----ls-remote----#
-        if(data == 'ls-remote'):
+        if(_data[0] == 'ls-remote'):
             # refresh file list
             files = [f for f in os.listdir('.') if os.path.isfile(f)]
             print('User: '+addr[0]+':'+str(addr[1])+' requested ls-remote')
