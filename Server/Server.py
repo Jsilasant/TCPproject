@@ -12,7 +12,7 @@ import _thread
         
 path = ("./")
 # fileList = []
-_lsremote = ("ls-remote")
+_lsremote = ('ls-remote')
 files = [f for f in os.listdir('.') if os.path.isfile(f)]
  
 HOST = '127.0.0.1'   # Symbolic name meaning all available interfaces
@@ -44,11 +44,8 @@ def clientthread(conn):
          
         #Receiving from client
         data = conn.recv(1024)
-
-        # telnet sends dirty strings, t = data.isalnum() to check. clean if using telnet
-
         # we split data at the first white space. first word is opcode, second is file
-        _data = data.split(" ", 1)
+        _data = data.decode().split(" ", 1)
 
         #----ls-remote----#
         if(data == _lsremote):
@@ -59,7 +56,7 @@ def clientthread(conn):
             for f in files:
                 fileSize = os.path.getsize(f)
                 remoteList += ("\n-> "+f+"\t%d bytes" % fileSize)
-            conn.sendall(remoteList)
+            conn.sendall(remoteList.encode())
 
         #----PUT----#
         elif(_data[0] == 'put'):
@@ -114,7 +111,7 @@ def clientthread(conn):
                     print('File found. Sending file size to user:')
                     # send 'found' flag to user
                     reply = str(_found)
-                    conn.sendall(reply)
+                    conn.sendall(reply.encode())
                     # get file size and send it to user
                     reqFileSize = os.path.getsize(f)
                     conn.sendall(str(reqFileSize))
@@ -154,15 +151,15 @@ def clientthread(conn):
             if(_found == False):
                 print('File requested not available in dir.')
                 reply = str(_found)
-                conn.sendall(reply)
+                conn.sendall(reply.encode())
 
             #reply = 'OK...' + data
             #conn.sendall(reply)
             #break
         else:
             print(data)
-            reply = ('OK...' + data)
-            conn.sendall(reply)
+            reply = ('OK...' + data.decode())
+            conn.sendall(reply.encode())
 
         if not data: 
             break
@@ -179,6 +176,6 @@ while 1:
     print ('Connected with ' + addr[0] + ':' + str(addr[1]))
      
     #start new thread takes 1st argument as a function name to be run, second is the tuple of arguments to the function.
-    _thread.start_new_thread(clientthread,(conn))
+    _thread.start_new_thread(clientthread,(conn,))
  
 s.close()
