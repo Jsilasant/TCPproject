@@ -81,9 +81,9 @@ def clientthread(conn):
 
                     # get file size and send it to Renderer
                     with open(f) as file:
-                        lines = file.readlines()
+                        line = file.readlines()
                         while line != '':
-                            connect.sendto(response.encode(), (HOST, 48998))
+                            connect.sendto(line.encode(), (HOST, 48998))
                             time.sleep(3)
                             line = file.readline()
                         print("File transfer complete")
