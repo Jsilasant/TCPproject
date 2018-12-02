@@ -7,6 +7,8 @@ import time
 import threading
 from threading import Thread
 import _thread
+from subprocess import STDOUT, check_output
+import multiprocessing
 
 
         
@@ -43,10 +45,10 @@ print ('Socket now listening')
 def clientthread(conn):
     #Sending message to connected client
     #conn.send('Connected, type !help for command list:\n') #send only takes string
-     
+
     #infinite loop so that function do not terminate and thread do not end.
     while True:
-         
+
         #Receiving from client
         rawData = conn.recv(1024)
         # rawData will be split with a space.
@@ -79,36 +81,42 @@ def clientthread(conn):
                     found = True
                     print('File found. Sending file content to Renderer.')
                     # send 'found' flag to Everybody
-                    reply = str(found)
-                    conn.sendall(reply.encode())
-
-        while(command == 'play') & (found == True):
-            # get file size and send it to Renderer
-            with open(requestedFilename) as file:
-                line = file.readline()
-                while line != '':
-                    connect.sendto(line.encode(), (HOST, 48998))
-                    time.sleep(3)
-                    line = file.readline()
-                    print("Line sent Successfully!")
-
-
-
-
-
-            #--- file requested not found ---#
-            if(found == False):
+                    playFilereply = str(found)
+                    conn.sendall(playFilereply.encode())
+                    # --- file requested not found ---#
+            if (found == False):
                 print('File requested not available in dir.')
-                reply = str(found)
-                conn.sendall(reply.encode())
+                notFoundreply = str(found)
+                conn.sendall(notFoundreply.encode())
 
-            #reply = 'OK...' + rawData
-            #conn.sendall(reply)
-            #break
-        else:
-            print(rawData)
-            reply = ('OK...' + rawData.decode())
-            conn.sendall(reply.encode())
+        if found == True:
+            with open(requestedFilename) as file:
+                playcommand='play'
+                line = file.readline()
+                while(command == 'play') & (found == True):
+                    if playcommand == 'pause':
+                        time.sleep(3)
+                    elif playcommand == "resume" or playcommand == 'play':
+                        if file.readable():
+                            connect.sendto(line.encode(), (HOST, 48998))
+                            time.sleep(3)
+                            line = file.readline()
+                            print("Line sent Successfully!")
+                        else:
+                            print('File contents sent successfully')
+                            command=''
+                            break
+                    #elif playcommand == "playback":
+                           #print('playback is happening')
+                           # break
+                    ready = select.select([conn], [], [], 2)
+                    if ready:
+                        conn.settimeout(2)
+                        try:
+                            rawData = conn.recv(1024)
+                        except:
+                            continue
+                    playcommand = rawData.decode().split(" ", 1)[0]
 
         if not rawData:
             break
