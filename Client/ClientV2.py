@@ -5,9 +5,10 @@ import os
 serverName = "localhost"
 serverPort = 48999
 clientSocket = socket(AF_INET, SOCK_STREAM)
-
+#clienttoRender = socket(AF_INET, SOCK_STREAM)
 # open the TCP connection
 clientSocket.connect((serverName, 48997))
+#clienttoRender.connect((serverName, 48998))
 
 print("Connected. Type !help for command list:\n")
 path = ("./")
@@ -27,6 +28,10 @@ while 1:
            "ls-local       : list local files\n"+
            "ls-remote      : list remote files\n"+
            "play 'filename': play remote file to Renderer\n"+
+           "Functions: used for Renderer. \n"+
+           "resume         : Resumes Renderer after paused \n" +
+           "pause          : Pauses Renderer \n" +
+           #"playback       : Makes user replay file \n " +
            "exit           : terminates program")
 
   # user calls ls-local
@@ -48,7 +53,14 @@ while 1:
     modifiedSentence = clientSocket.recv(1024)
     modifiedSentence = modifiedSentence.decode('utf-8')
     print(modifiedSentence)
-
+  #user commands after user plays file
+  elif(sentence=="resume"):
+    clientSocket.sendto(sentence.encode(),(serverName, serverPort))
+  elif (sentence == "pause"):
+    clientSocket.sendto(sentence.encode(), (serverName, serverPort))
+  elif (sentence == "playback"):
+    print('Playing back, ask the server to play the file again.')
+    clientSocket.sendto(sentence.encode(), (serverName, serverPort))
   #commands processed remotely:
   elif(len(_check)==2):
     if(_check[0].lower()=="play"):
