@@ -10,28 +10,33 @@ import _thread
 
 
         
-path = ("./")
+#path = ("./")
 # fileList = []
 #_lsremote = ("ls-remote")
-files = [f for f in os.listdir('.') if os.path.isfile(f)]
+#files = [f for f in os.listdir('.') if os.path.isfile(f)]
  
 HOST = 'localhost'   # Hostname
-PORT = 8888 # port
+PORT = 48997 # port
+PORT2 = 48996 # port2
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-print ('Socket created')
+socketRender = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+print ('Sockets created')
  
 #Bind socket to local host and port
 try:
     s.bind((HOST, PORT))
-except (socket.error, msg):
+    socketRender.bind((HOST, PORT2))
+except (socket.error):
     print ('Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
     sys.exit()
      
-print ('Socket bind complete')
+print ('Socket(s) bind complete')
  
 #Start listening on socket
-s.listen(10)
+s.listen(1)
+socketRender.listen(1)
+print ('SocketRender is now listening')
 print ('Socket now listening')
  
 #Function for handling connections. This will be used to create threads
@@ -60,54 +65,35 @@ def clientthread(conn):
 
 
 
-        #----GET----#
-        elif(_data[0] == 'get'):
+        #----PLAY----#
+        elif(_data[0] == 'play'):
             _found = False # flag in case file is not found
-            print('User: '+addr[0]+':'+str(addr[1])+' requested a GET for: %s' % _data[1])
+            print('User: '+addr[0]+':'+str(addr[1])+' requested a Play for: %s' % _data[1])
             files = [f for f in os.listdir('.') if os.path.isfile(f)]
             for f in files:
                 #--- file requested found ---#
                 if(f == _data[1]):
                     _found = True
-                    print('File found. Sending file size to user:')
-                    # send 'found' flag to user
+                    print('File found. Sending file content to Renderer.')
+                    # send 'found' flag to Everybody
                     reply = str(_found)
                     conn.sendall(reply.encode())
-                    # get file size and send it to user
-                    reqFileSize = os.path.getsize(f)
-                    conn.sendall(bytes(reqFileSize))
-                    
-                    # receive user file size ACK
-                    fSizeACK = conn.recv(1024)
-                    print("ACK: "+fSizeACK.decode())
 
-                    print('Preparing upload...')
+                    # get file size and send it to Renderer
+                    with open(f) as file:
+                        lines = file.readlines()
+                        response = ""
+                       # if (response != '' )
+                        for x in range(0, 3):
+                            response += lines[x]
+                        connect.sendto(response.encode(), (HOST, 48998))
 
-                    # send file in slices of 1024 bytes:
-                    # open file in read byte mode:
-                    f = open((path+f), "rb") # read bytes flag is passed
-                    buffRead = 0
-                    bytesRemaining = int(reqFileSize)  
-
-                    while bytesRemaining != 0:
-                        if(bytesRemaining >= 1024): # slab >= than 1024 buffer
-                            buffRead = f.read(1024)
-                            sizeofSlabRead = len(buffRead)
-                            print('remaining: %d' % bytesRemaining)
-                            print('read: %d'%sizeofSlabRead)
-                            # send slab to client:
-                            conn.sendall(buffRead)
-                            bytesRemaining = bytesRemaining - int(sizeofSlabRead)
-                        else: # slab smaller than 1024 buffer
-                            buffRead = f.read(bytesRemaining) # read 1024 bytes at a time
-                            sizeofSlabRead = len(buffRead)
-                            print('remaining: %d' % bytesRemaining)
-                            print('read: %d'%sizeofSlabRead)
-                            # send slab to client:
-                            conn.sendall(buffRead)
-                            bytesRemaining = bytesRemaining - int(sizeofSlabRead)
-                    print("Read the file completely")
-
+                #if(lines == EOF)
+                        #print('File has ended')
+                        #message = ('File has ended')
+                        #s.sendto(message.encode(),(serverName,48998))
+                        # file.close()
+            
             #--- file requested not found ---#
             if(_found == False):
                 print('File requested not available in dir.')
@@ -134,9 +120,13 @@ def clientthread(conn):
 while 1:
     #wait to accept a connection - blocking call
     conn, addr = s.accept()
-    print ('Connected with ' + addr[0] + ':' + str(addr[1]))
+    print('Connected with ' + addr[0] + ':' + str(addr[1]))
+
+    connect, address = socketRender.accept()
+    print('Connected with ' + address[0] + ':' + str(address[1]))
      
     #start new thread takes 1st argument as a function name to be run, second is the tuple of arguments to the function.
     _thread.start_new_thread(clientthread,(conn,))
+    #_thread.start_new_thread(renderthread, (connect,))
  
 s.close()

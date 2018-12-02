@@ -3,11 +3,11 @@ import sys
 import os
 
 serverName = "localhost"
-serverPort = 8888
+serverPort = 48999
 clientSocket = socket(AF_INET, SOCK_STREAM)
 
 # open the TCP connection
-clientSocket.connect((serverName,48997))
+clientSocket.connect((serverName, 48997))
 
 print("Connected. Type !help for command list:\n")
 path = ("./")
@@ -23,11 +23,11 @@ while 1:
   # user calls !help
   if(sentence=="!help"):
     print ("Available commands:\n"+
-           "!help         : list available commands\n"+
-           "ls-local      : list local files\n"+
-           "ls-remote     : list remote files\n"+
-           "get 'filename': download remote file to local\n"+
-           "exit          : terminates program")
+           "!help          : list available commands\n"+
+           "ls-local       : list local files\n"+
+           "ls-remote      : list remote files\n"+
+           "play 'filename': play remote file to Renderer\n"+
+           "exit           : terminates program")
 
   # user calls ls-local
   elif(sentence=="ls-local"):
@@ -51,11 +51,11 @@ while 1:
 
   #commands processed remotely:
   elif(len(_check)==2):
-    if(_check[0].lower()=="get"):
-            #----GET----#
-      # for GET we send the string and wait for server's response
-      if(_check[0]=='get'):
-        clientSocket.sendto(sentence.encode(),(serverName, serverPort))
+    if(_check[0].lower()=="play"):
+            #----PLAY----#
+      # for PLAY we send the string and wait for server's response
+      if(_check[0]=='play'):
+        clientSocket.sendto(sentence.encode(),(serverName, 48997))
         modifiedSentence = clientSocket.recv(1024)
         modifiedSentence = modifiedSentence.decode('utf-8')
         print(modifiedSentence)
@@ -63,38 +63,7 @@ while 1:
         # check server's response
         #modifiedSentence == 'True'
         if(modifiedSentence == 'True'): # file found
-          print('File found, preparing download...')
-
-          # receive file size
-          reqFileSize = clientSocket.recv(1024)
-          print("file size: "+reqFileSize.decode())
-
-          # send file size ACK to server
-          fSizeACK = bytes(reqFileSize)
-          clientSocket.sendto(fSizeACK,(serverName, serverPort))
-
-          # receive file in slices of 1024 bytes
-          # open a file in write byte mode:
-          f = open((path+_check[1]), "wb") # write bytes flag is passed
-          buffWrote = 0
-          bytesRemaining = (reqFileSize.decode())
-
-          while bytesRemaining != 0:
-            if(bytesRemaining >= '1024'): # slab >= than 1024 buffer
-              # receive slab from server
-              slab = clientSocket.recv(1024)
-              f.write(slab)
-              sizeofSlabReceived = len(slab)
-              print("wrote %d bytes" % len(slab))
-
-              bytesRemaining = bytesRemaining - int(sizeofSlabReceived)
-            else:
-              # receive slab from server
-              slab = clientSocket.recv(1024) # or 1024
-              f.write(slab)
-              sizeofSlabReceived = len(slab)
-              print("wrote %d bytes" % len(slab))
-              #bytesRemaining = int(bytesRemaining) - int(sizeofSlabReceived)
+          print('OK. Sending to Renderer!')
 
         elif(modifiedSentence == 'False'): # file not found
           print(modifiedSentence)
